@@ -1,0 +1,71 @@
+name: Release Build
+
+on:
+    release:
+        types: [created]
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                os: [windows-latest, macos-latest, ubuntu-latest]
+                include:
+                    - os: windows-latest
+                      build_name: windows-amd64
+                      artifact_name: windows-amd64.zip
+                    - os: macos-latest
+                      build_name: darwin-amd64
+                      artifact_name: darwin-amd64.zip
+                    - os: ubuntu-latest
+                      build_name: linux-amd64
+                      artifact_name: linux-amd64.zip
+
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                  go-version: '>=1.20.0'
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '18'
+
+            - name: Install Wails
+              run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+            - name: Install Frontend Dependencies
+              run: |
+                  cd frontend
+                  npm install
+
+            - name: Build Application
+              run: wails build --platform ${{ matrix.build_name }}
+
+            - name: Zip Release Files (Windows)
+              if: matrix.os == 'windows-latest'
+              run: |
+                  Compress-Archive -Path build/bin/* -DestinationPath ${{ matrix.artifact_name }}
+              shell: pwsh
+
+            - name: Zip Release Files (Unix)
+              if: matrix.os != 'windows-latest'
+              run: |
+                  cd build/bin
+                  zip -r ../../${{ matrix.artifact_name }} ./*
+
+            - name: Upload Release Asset
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: ./${{ matrix.artifact_name }}
+                  asset_name: ${{ matrix.artifact_name }}
+                  asset_content_type: application/zip
