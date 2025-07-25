@@ -11,13 +11,13 @@ jobs:
                 os: [windows-latest, macos-latest, ubuntu-latest]
                 include:
                     - os: windows-latest
-                      build_name: windows-amd64
+                      build_name: windows
                       artifact_name: windows-amd64.zip
                     - os: macos-latest
-                      build_name: darwin-amd64
+                      build_name: darwin
                       artifact_name: darwin-amd64.zip
                     - os: ubuntu-latest
-                      build_name: linux-amd64
+                      build_name: linux
                       artifact_name: linux-amd64.zip
 
         runs-on: ${{ matrix.os }}
@@ -45,14 +45,39 @@ jobs:
                   cd frontend
                   npm install
 
+            - name: Update Wails Version in go.mod
+              run: |
+                  go get github.com/wailsapp/wails/v2@v2.10.2
+                  go mod tidy
+
+            - name: Debug Info
+              run: |
+                  wails version
+                  go version
+                  pwd
+                  ls -la
+
             - name: Build Application
-              run: wails build --platform ${{ matrix.build_name }}
+              run: |
+                  wails build
+              env:
+                  CGO_ENABLED: 1
+
+            - name: Debug Build Directory (Windows)
+              if: matrix.os == 'windows-latest'
+              run: |
+                  Get-ChildItem -Path . -Recurse | Where-Object { $_.PSIsContainer } | Select-Object FullName
+                  if (Test-Path "build") {
+                      Get-ChildItem -Path "build" -Recurse
+                  }
+              shell: pwsh
 
             - name: Zip Release Files (Windows)
               if: matrix.os == 'windows-latest'
               run: |
                   $buildDir = "build\bin"
                   if (Test-Path $buildDir) {
+                      Get-ChildItem -Path $buildDir
                       Compress-Archive -Path "$buildDir\*" -DestinationPath ${{ matrix.artifact_name }} -Force
                   } else {
                       Write-Error "Build directory not found: $buildDir"
