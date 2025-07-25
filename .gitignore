@@ -1,0 +1,8 @@
+build/bin
+node_modules
+frontend/dist
+.kiro/ 
+.idea/
+.DS_Store
+.env
+.env.local
