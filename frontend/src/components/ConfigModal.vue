@@ -17,7 +17,7 @@
                         class="form-input"
                         :disabled="loading"
                     />
-                </div> 
+                </div>
                 <div class="form-group">
                     <label for="updateInterval">更新间隔（分钟）:</label>
                     <input
@@ -75,13 +75,7 @@ const success = ref(false);
 
 const canSave = computed(() => {
     const interval = parseInt(formData.value.updateInterval);
-    return (
-        formData.value.token.trim() !== '' &&
-        formData.value.vehicleId.trim() !== '' &&
-        !isNaN(interval) &&
-        interval >= 1 &&
-        interval <= 60
-    );
+    return formData.value.token.trim() !== '' && !isNaN(interval) && interval >= 1 && interval <= 60;
 });
 
 const closeModal = () => {
