@@ -6,10 +6,6 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
-export function GetMockVehicleData() {
-  return window['go']['main']['App']['GetMockVehicleData']();
-}
-
 export function GetVehicleData() {
   return window['go']['main']['App']['GetVehicleData']();
 }
@@ -26,6 +22,14 @@ export function MoveToCorner(arg1) {
   return window['go']['main']['App']['MoveToCorner'](arg1);
 }
 
+export function Quit() {
+  return window['go']['main']['App']['Quit']();
+}
+
+export function ScheduleRefresh() {
+  return window['go']['main']['App']['ScheduleRefresh']();
+}
+
 export function SetWindowPosition(arg1, arg2) {
   return window['go']['main']['App']['SetWindowPosition'](arg1, arg2);
 }
@@ -34,10 +38,14 @@ export function ShowWindow() {
   return window['go']['main']['App']['ShowWindow']();
 }
 
-export function StartDrag() {
-  return window['go']['main']['App']['StartDrag']();
+export function StartWidget() {
+  return window['go']['main']['App']['StartWidget']();
 }
 
-export function ValidateAndSaveConfig(arg1, arg2) {
-  return window['go']['main']['App']['ValidateAndSaveConfig'](arg1, arg2);
+export function ValidateAndSaveConfig(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ValidateAndSaveConfig'](arg1, arg2, arg3);
+}
+
+export function VehicleHomePage() {
+  return window['go']['main']['App']['VehicleHomePage']();
 }

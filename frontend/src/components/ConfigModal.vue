@@ -17,18 +17,19 @@
                         class="form-input"
                         :disabled="loading"
                     />
-                </div>
-
+                </div> 
                 <div class="form-group">
-                    <label for="vehicleId">车架号:</label>
+                    <label for="updateInterval">更新间隔（分钟）:</label>
                     <input
-                        id="vehicleId"
-                        v-model="formData.vehicleId"
-                        type="text"
-                        placeholder="请输入车架号"
+                        id="updateInterval"
+                        v-model.number="formData.updateInterval"
+                        type="number"
+                        min="1"
+                        max="60"
                         class="form-input"
                         :disabled="loading"
                     />
+                    <small class="form-hint">建议设置在1-60分钟之间</small>
                 </div>
 
                 <div v-if="error" class="error-message">
@@ -65,6 +66,7 @@ const emit = defineEmits(['close', 'saved']);
 const formData = ref({
     token: '',
     vehicleId: '',
+    updateInterval: 5, // 默认5分钟
 });
 
 const loading = ref(false);
@@ -72,7 +74,14 @@ const error = ref('');
 const success = ref(false);
 
 const canSave = computed(() => {
-    return formData.value.token.trim() !== '' && formData.value.vehicleId.trim() !== '';
+    const interval = parseInt(formData.value.updateInterval);
+    return (
+        formData.value.token.trim() !== '' &&
+        formData.value.vehicleId.trim() !== '' &&
+        !isNaN(interval) &&
+        interval >= 1 &&
+        interval <= 60
+    );
 });
 
 const closeModal = () => {
@@ -89,7 +98,13 @@ const saveConfig = async () => {
     success.value = false;
 
     try {
-        await ValidateAndSaveConfig(formData.value.token.trim(), formData.value.vehicleId.trim());
+        // 验证更新间隔
+        const interval = parseInt(formData.value.updateInterval);
+        if (isNaN(interval) || interval < 1 || interval > 60) {
+            throw new Error('更新间隔必须在1-60分钟之间');
+        }
+
+        await ValidateAndSaveConfig(formData.value.token.trim(), formData.value.vehicleId.trim(), interval);
         success.value = true;
 
         setTimeout(() => {
@@ -276,5 +291,22 @@ watch(
 
 .btn-primary:hover:not(:disabled) {
     background: #0056cc;
+}
+
+.form-hint {
+    display: block;
+    color: #666;
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 </style>

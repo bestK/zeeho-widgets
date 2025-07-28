@@ -4,8 +4,6 @@ import {main} from '../models';
 
 export function GetConfig():Promise<main.Config>;
 
-export function GetMockVehicleData():Promise<main.VehicleData>;
-
 export function GetVehicleData():Promise<main.VehicleData>;
 
 export function Greet(arg1:string):Promise<string>;
@@ -14,10 +12,16 @@ export function MinimizeToTray():Promise<void>;
 
 export function MoveToCorner(arg1:string):Promise<void>;
 
+export function Quit():Promise<void>;
+
+export function ScheduleRefresh():Promise<void>;
+
 export function SetWindowPosition(arg1:number,arg2:number):Promise<void>;
 
 export function ShowWindow():Promise<void>;
 
-export function StartDrag():Promise<void>;
+export function StartWidget():Promise<void>;
 
-export function ValidateAndSaveConfig(arg1:string,arg2:string):Promise<void>;
+export function ValidateAndSaveConfig(arg1:string,arg2:string,arg3:number):Promise<void>;
+
+export function VehicleHomePage():Promise<any>;

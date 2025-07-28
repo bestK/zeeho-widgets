@@ -5,33 +5,131 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/bestk/zeeho-widgets/tools"
+	"github.com/go-co-op/gocron"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
 type App struct {
-	ctx    context.Context
-	config *Config
+	ctx       context.Context
+	config    *Config
+	scheduler *gocron.Scheduler
 }
 
 // Config represents the application configuration
 type Config struct {
-	Token     string `json:"token"`
-	VehicleID string `json:"vehicleId"`
+	Token          string `json:"token"`
+	VehicleID      string `json:"vehicleId"`
+	UpdateInterval int    `json:"updateInterval"`
 }
 
 // VehicleData represents the vehicle information
 type VehicleData struct {
-	VehicleName    string        `json:"vehicleName"`
-	BmsSoc         string        `json:"bmssoc"`
-	HmiRidableMile string        `json:"hmiRidableMile"`
-	VehiclePicUrl  string        `json:"vehiclePicUrl"`
-	Location       *LocationData `json:"location"`
+	VinNo                      string        `json:"vinNo"`
+	DeviceName                 string        `json:"deviceName"`
+	BindStartTime              string        `json:"bindStartTime"`
+	Fate                       string        `json:"fate"`
+	VehicleName                string        `json:"vehicleName"`
+	VehiclePicUrl              string        `json:"vehiclePicUrl"`
+	VehicleBackPicUrl          string        `json:"vehicleBackPicUrl"`
+	ShareName                  *string       `json:"shareName"`
+	IsShared                   string        `json:"isShared"`
+	RideMileageMonth           string        `json:"rideMileageMonth"`
+	RidingTimeMonth            string        `json:"ridingTimeMonth"`
+	RidingTimeMonthUnitMinute  string        `json:"ridingTimeMonthUnitMinute"`
+	AvgVelocityMonth           string        `json:"avgVelocityMonth"`
+	BmsSoc                     string        `json:"bmssoc"`
+	HmiRidableMile             string        `json:"hmiRidableMile"`
+	GsmRxLev                   string        `json:"gsmRxLev"`
+	GsmRxLevValue              string        `json:"gsmRxLevValue"`
+	BluetoothAddress           string        `json:"bluetoothAddress"`
+	HmiBluetoothAddress        string        `json:"hmiBluetoothAddress"`
+	ChargeState                string        `json:"chargeState"`
+	FullChargeTime             string        `json:"fullChargeTime"`
+	Pressure                   string        `json:"pressure"`
+	PressureValue              string        `json:"pressureValue"`
+	HeadLockState              string        `json:"headLockState"`
+	RideState                  string        `json:"rideState"`
+	GreenContribution          string        `json:"greenContribution"`
+	OtaVersion                 string        `json:"otaVersion"`
+	ShareUserId                *string       `json:"shareUserId"`
+	BindingUserId              int64         `json:"bindingUserId"`
+	CarMaster                  string        `json:"carMaster"`
+	VehicleType                string        `json:"vehicleType"`
+	VehicleTypeName            string        `json:"vehicleTypeName"`
+	EncryptInfo                EncryptInfo   `json:"encryptInfo"`
+	RedPoint                   int           `json:"redPoint"`
+	HmiRidableMileAbnormalShow *string       `json:"hmiRidableMileAbnormalShow"`
+	ExpectFullTimeDescribe     *string       `json:"expectFullTimeDescribe"`
+	Location                   Location      `json:"location"`
+	NavigationType             int           `json:"navigationType"`
+	Navigation                 string        `json:"navigation"`
+	Projection                 string        `json:"projection"`
+	MotoPlay                   int           `json:"motoPlay"`
+	WifiAddress                string        `json:"wifiAddress"`
+	BluetoothSearch            bool          `json:"bluetoothSearch"`
+	VehicleTypeDetailId        int           `json:"vehicleTypeDetailId"`
+	ShareEndTime               *string       `json:"shareEndTime"`
+	ResidualSeconds            *string       `json:"residualSeconds"`
+	SupportNetworkUnlock       int           `json:"supportNetworkUnlock"`
+	IntelligentType            *string       `json:"intelligentType"`
+	TotalRideMile              string        `json:"totalRideMile"`
+	MaxMileage                 string        `json:"maxMileage"`
+	DeviceType                 int           `json:"deviceType"`
+	BroadcastType              string        `json:"broadcastType"`
+	SupportUnlock              int           `json:"supportUnlock"`
+	BindDate                   *string       `json:"bindDate"`
+	CyclingEventStatisticFlag  bool          `json:"cyclingEventStatisticFlag"`
+	WhetherChargeState         bool          `json:"whetherChargeState"`
+	FirstBindDate              string        `json:"firstBindDate"`
+	MaxRangeMileage            string        `json:"maxRangeMileage"`
+	OnlineStatus               string        `json:"onlineStatus"`
+	ActivationDate             string        `json:"activationDate"`
+	LastUseDate                int           `json:"lastUseDate"`
+	RechargeEndDate            string        `json:"rechargeEndDate"`
+	OpenCushionFlag            bool          `json:"openCushionFlag"`
+	OpenStorageBoxFlag         bool          `json:"openStorageBoxFlag"`
+	LoudlySearchCar            int           `json:"loudlySearchCar"`
+	MmiUuid                    string        `json:"mmiUuid"`
+	ProductKey                 string        `json:"productKey"`
+	IotInstanceId              string        `json:"iotInstanceId"`
+	IotProperties              []IotProperty `json:"iotProperties"`
+	ServiceRechargeStatus      string        `json:"serviceRechargeStatus"`
+	RefreshTime                string        `json:"refreshTime"`
+	VehicleScalePicUrl         string        `json:"vehicleScalePicUrl"`
+	GaodeLincenseVinNo         string        `json:"gaodeLincenseVinNo"`
+	GaodeLincenseId            string        `json:"gaodeLincenseId"`
+}
+
+type EncryptInfo struct {
+	Key          string `json:"key"`
+	Iv           string `json:"iv"`
+	EncryptValue string `json:"encryptValue"`
+}
+
+type Location struct {
+	Longitude        float64 `json:"longitude"`
+	Latitude         float64 `json:"latitude"`
+	Altitude         float64 `json:"altitude"`
+	CoordinateSystem string  `json:"coordinateSystem"`
+	LocationTime     string  `json:"locationTime"`
+	Address          string  `json:"address,omitempty"`
+}
+
+type IotProperty struct {
+	Name         string  `json:"name"`
+	Identify     string  `json:"identify"`
+	Value        string  `json:"value"`
+	Time         string  `json:"time"`
+	DbUpdateTime *string `json:"dbUpdateTime"`
+	Describe     *string `json:"describe"`
 }
 
 // LocationData represents location information
@@ -56,12 +154,14 @@ type AmapResponse struct {
 type APIResponse struct {
 	Code    string      `json:"code"`
 	Message string      `json:"message"`
-	Data    VehicleData `json:"data"`
+	Data    interface{} `json:"data"`
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	app := &App{}
+	app := &App{
+		scheduler: gocron.NewScheduler(time.UTC),
+	}
 	app.loadConfig()
 	return app
 }
@@ -95,7 +195,6 @@ func (a *App) GetVehicleData() (*VehicleData, error) {
 		return nil, fmt.Errorf("创建请求失败: %v", err)
 	}
 
-	// 使用配置中的token
 	req.Header.Set("Authorization", "Bearer "+a.config.Token)
 	req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
 	req.Header.Set("Accept", "application/json")
@@ -134,33 +233,100 @@ func (a *App) GetVehicleData() (*VehicleData, error) {
 		return nil, fmt.Errorf("API返回错误: %s", apiResponse.Message)
 	}
 
+	// 将 interface{} 转换为 map
+	dataMap, ok := apiResponse.Data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("数据格式错误")
+	}
+
+	// 重新序列化为 JSON
+	dataJSON, err := json.Marshal(dataMap)
+	if err != nil {
+		return nil, fmt.Errorf("数据转换失败: %v", err)
+	}
+
+	// 解析为 VehicleData
+	var data VehicleData
+	if err := json.Unmarshal(dataJSON, &data); err != nil {
+		return nil, fmt.Errorf("数据解析失败: %v", err)
+	}
+
 	// 获取地址信息
-	if apiResponse.Data.Location != nil {
-		address, err := a.getAddressFromLocation(apiResponse.Data.Location.Longitude, apiResponse.Data.Location.Latitude)
+	if data.Location.Longitude != 0 && data.Location.Latitude != 0 {
+		address, err := a.getAddressFromLocation(data.Location.Longitude, data.Location.Latitude)
 		if err == nil {
-			apiResponse.Data.Location.Address = address
+			data.Location.Address = address
 		}
 	}
 
-	return &apiResponse.Data, nil
+	return &data, nil
 }
 
-// GetMockVehicleData 返回模拟数据用于测试
-func (a *App) GetMockVehicleData() *VehicleData {
-	return &VehicleData{
-		VehicleName:    "Zeeho AE8",
-		BmsSoc:         "85",
-		HmiRidableMile: "120",
-		VehiclePicUrl:  "https://via.placeholder.com/150x150/333/fff?text=Zeeho",
-		Location: &LocationData{
-			CoordinateSystem: "2",
-			Latitude:         22.584569557649274,
-			Longitude:        114.11163989303444,
-			LocationTime:     "01/15 14:30",
-			Altitude:         54.2,
-			Address:          "广东省深圳市南山区科技园",
-		},
+// VehicleHomePage 获取车辆首页数据
+func (a *App) VehicleHomePage() (*[]VehicleData, error) {
+	url := "https://tapi.zeehoev.com/v1.0/app/cfmotoserverapp/vehicleHomePage"
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
 	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+a.config.Token)
+	req.Header.Set("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Cookie", "acw_tc=0b32824217388280172008957ec68b4a84c95e1b5efd8b103d6c69b40480d9")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %v", err)
+	}
+
+	var apiResponse APIResponse
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("解析JSON失败: %v", err)
+	}
+
+	// 将 interface{} 转换为 []interface{}
+	dataSlice, ok := apiResponse.Data.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("数据格式错误")
+	}
+
+	// 重新序列化为 JSON
+	dataJSON, err := json.Marshal(dataSlice)
+	if err != nil {
+		return nil, fmt.Errorf("数据转换失败: %v", err)
+	}
+
+	// 解析为 []VehicleData
+	var data []VehicleData
+	if err := json.Unmarshal(dataJSON, &data); err != nil {
+		return nil, fmt.Errorf("数据解析失败: %v", err)
+	}
+
+	// 获取每个车辆的地址信息
+	for i := range data {
+		if data[i].Location.Longitude != 0 && data[i].Location.Latitude != 0 {
+			address, err := a.getAddressFromLocation(data[i].Location.Longitude, data[i].Location.Latitude)
+			if err == nil {
+				data[i].Location.Address = address
+			}
+		}
+	}
+
+	return &data, nil
 }
 
 // getAddressFromLocation 根据经纬度获取地址信息
@@ -226,6 +392,8 @@ func (a *App) saveConfig() error {
 		return err
 	}
 
+	runtime.EventsEmit(a.ctx, "configUpdate", string(data))
+
 	return os.WriteFile(configPath, data, 0644)
 }
 
@@ -235,16 +403,19 @@ func (a *App) GetConfig() *Config {
 }
 
 // ValidateAndSaveConfig 验证并保存配置
-func (a *App) ValidateAndSaveConfig(token, vehicleId string) error {
+func (a *App) ValidateAndSaveConfig(token, vehicleId string, updateInterval int) error {
 	// 创建临时配置进行验证
 	tempConfig := &Config{
-		Token:     token,
-		VehicleID: vehicleId,
+		Token:          token,
+		VehicleID:      vehicleId,
+		UpdateInterval: updateInterval,
 	}
 
-	// 验证配置是否有效
-	if err := a.validateConfig(tempConfig); err != nil {
-		return fmt.Errorf("配置验证失败: %v", err)
+	if vehicleId != "" {
+		// 验证配置是否有效
+		if err := a.validateConfig(tempConfig); err != nil {
+			return fmt.Errorf("配置验证失败: %v", err)
+		}
 	}
 
 	// 验证成功，保存配置
@@ -370,8 +541,38 @@ func (a *App) ShowWindow() {
 	runtime.WindowShow(a.ctx)
 }
 
-// StartDrag 开始拖动窗口 (在 Wails v2 中通过 CSS 实现)
-func (a *App) StartDrag() {
-	// Wails v2 中拖动功能通过前端 CSS 实现
-	// 这个方法保留用于兼容性，实际拖动在前端处理
+// Widget 小部件
+func (a *App) StartWidget() {
+	tools.SetupDesktopChildWidget("Zeeho Widget")
+}
+
+// Quit 退出应用程序
+func (a *App) Quit() {
+	runtime.Quit(a.ctx)
+}
+
+func (a *App) ScheduleRefresh() {
+	// Stop any existing scheduled tasks
+	a.scheduler.Clear()
+
+	if a.config.UpdateInterval < 1 {
+		log.Println("UpdateInterval must > 0")
+	}
+
+	log.Println("Schedule refresh based on config interval")
+	// Schedule refresh based on config interval
+	a.scheduler.Every(a.config.UpdateInterval).Minutes().Do(func() {
+		// Refresh vehicle data
+		data, err := a.VehicleHomePage()
+		if err != nil {
+			// Handle error - could emit event to frontend
+			runtime.EventsEmit(a.ctx, "refreshError", err.Error())
+		} else {
+			// Emit success event to frontend
+			runtime.EventsEmit(a.ctx, "dataRefreshed", data)
+		}
+	})
+
+	// Start the scheduler
+	a.scheduler.StartAsync()
 }
