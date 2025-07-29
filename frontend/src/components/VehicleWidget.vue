@@ -1,7 +1,7 @@
 <template>
-    <div class="widget-container" style="--wails-draggable: drag">
+    <div class="widget-container">
         <!-- 标题栏 -->
-        <div class="widget-header">
+        <div class="widget-header" style="--wails-draggable: drag">
             <div class="title">ZEEHO ({{ vehicleDataList.length }})</div>
             <div class="actions">
                 <!-- <button class="action-btn no-drag" @click="showConfirm('minimize')">
@@ -266,7 +266,6 @@ onUnmounted(() => {
     -webkit-backdrop-filter: blur(5px);
     border: 1px solid rgba(39, 35, 35, 0.65);
 }
-
 .widget-header {
     display: flex;
     justify-content: space-between;
@@ -274,6 +273,24 @@ onUnmounted(() => {
     margin-bottom: 8px;
     cursor: move;
     user-select: none;
+    position: relative;
+}
+
+.widget-header::before {
+    content: '⠿';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    color: #fff;
+}
+
+.widget-header:hover::before {
+    opacity: 0.6;
 }
 
 .widget-header .title {
