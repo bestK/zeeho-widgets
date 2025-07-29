@@ -4,9 +4,9 @@
     <div class="widget-header">
       <div class="title">ZEEHO ({{ vehicleDataList.length }})</div>
       <div class="actions">
-        <button class="action-btn no-drag" @click="showConfirm('minimize')">
+        <!-- <button class="action-btn no-drag" @click="showConfirm('minimize')">
           _
-        </button>
+        </button> -->
         <button class="action-btn no-drag" @click="showConfirm('exit')">
           ×
         </button>
@@ -14,13 +14,6 @@
     </div>
 
     <div class="widget-body" style="--wails-draggable: no-drag">
-      <!-- 苹果风格光点 -->
-      <div class="glow-particles">
-        <div class="particle particle-1"></div>
-        <div class="particle particle-2"></div>
-        <div class="particle particle-3"></div>
-      </div>
-
       <div v-if="loading" class="loading">
         <div class="spinner"></div>
       </div>
@@ -105,9 +98,10 @@
         >
           ⚙️
         </button>
-        <button class="control-btn widget-btn" @click="startWidget">🎯</button>
-        <button class="control-btn widget-btn" @click="refreshWidget">⟳</button>
-        <div class="vehicle-count">共 {{ vehicleDataList.length }} 台车辆</div>
+        <button class="control-btn widget-btn" @click="startWidget">🧩</button>
+        <button class="control-btn refresh-btn" @click="refreshWidget">⟳</button>
+        <!-- <div class="vehicle-count">共 {{ vehicleDataList.length }} 台车辆</div> -->
+        <div class="copyright">Power by KK</div> 
       </div>
     </div>
     <!-- 配置模态框 -->
@@ -288,6 +282,14 @@ onUnmounted(() => {
     0 8px 32px rgba(0, 0, 0, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   overflow: hidden;
+
+  /* From https://css.glass */
+  background: rgba(39, 35, 35, 0.56);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(39, 35, 35, 0.65);
 }
 
 .widget-header {
@@ -302,7 +304,8 @@ onUnmounted(() => {
 .widget-header .title {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #eee; 
+  opacity: 1;
 }
 
 .widget-header .actions {
@@ -338,7 +341,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   height: 75%;
-  width: 100%;
+  width: 100%; 
 }
 
 .loading {
@@ -416,13 +419,15 @@ onUnmounted(() => {
 .vehicle-card {
   flex-shrink: 0;
   width: 280px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background-color: rgba(0, 0, 0, 0.5); /* 高级黑 + 半透明 */
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px) saturate(180%); 
+  color: #f0f0f0;
 }
 
 .vehicle-name {
@@ -602,7 +607,8 @@ onUnmounted(() => {
 .control-btn {
   width: 32px;
   height: 32px;
-  background: white;
+  background: rgba(5, 5, 5, 0.56);
+  color: #fff;
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -610,7 +616,11 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; 
+}
+
+.refresh-btn:hover{
+  color: #333;
 }
 
 .control-btn:hover {
@@ -618,6 +628,16 @@ onUnmounted(() => {
 }
 
 .vehicle-count {
+  flex: 1;
+  font-size: 12px;
+  color: #666;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.copyright{
   flex: 1;
   font-size: 12px;
   color: #666;
