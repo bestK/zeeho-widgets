@@ -4,9 +4,11 @@ import (
 	"context"
 	"embed"
 
+	"github.com/bestk/zeeho-widgets/backend"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 )
 
 //go:embed all:frontend/dist
@@ -22,11 +24,20 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 255},
+		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
+		Windows: &windows.Options{
+			WebviewIsTransparent:              true,
+			WindowIsTranslucent:               false,
+			DisableFramelessWindowDecorations: true,
+		},
 		OnStartup: func(ctx context.Context) {
+
 			app.startup(ctx)
 
+			backend.SetTransparentBackground()
+
 			app.ScheduleRefresh()
+
 		},
 		Bind: []interface{}{
 			app,

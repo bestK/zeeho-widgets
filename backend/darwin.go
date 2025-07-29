@@ -1,6 +1,6 @@
 //go:build darwin
 
-package tools
+package backend
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -150,8 +150,8 @@ import (
 	"fmt"
 )
 
-func SetupDesktopChildWidget(windowTitle string) error {
-	fmt.Println("SetupDesktopChildWidget called with title:", windowTitle)
+func SetupDesktopChildWidget() error {
+	fmt.Println("SetupDesktopChildWidget called with title:", window_title)
 
 	// 设置窗口为桌面级别
 	C.setWindowLevelToDesktop()
@@ -161,4 +161,7 @@ func SetupDesktopChildWidget(windowTitle string) error {
 
 	fmt.Println("SetupDesktopChildWidget completed")
 	return nil
+}
+
+func SetTransparentBackground() {
 }

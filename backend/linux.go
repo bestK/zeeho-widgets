@@ -1,7 +1,10 @@
 //go:build linux
 
-package tools
+package backend
 
 func SetupDesktopChildWidget(windowTitle string) error {
 	return nil
+}
+
+func SetTransparentBackground() {
 }

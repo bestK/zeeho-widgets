@@ -17,8 +17,8 @@ import VehicleWidget from './components/VehicleWidget.vue';
 
 .app {
     width: 100vw;
-    height: 100vh;
-    background: #fff; 
+    height: 100vh; 
+    opacity: 1.0;
     padding: 4px;
 }
 </style>

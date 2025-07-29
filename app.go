@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/bestk/zeeho-widgets/tools"
+	"github.com/bestk/zeeho-widgets/backend"
 	"github.com/go-co-op/gocron"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -543,7 +543,7 @@ func (a *App) ShowWindow() {
 
 // Widget 小部件
 func (a *App) StartWidget() {
-	tools.SetupDesktopChildWidget("Zeeho Widget")
+	backend.SetupDesktopChildWidget()
 }
 
 // Quit 退出应用程序

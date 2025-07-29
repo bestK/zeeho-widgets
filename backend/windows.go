@@ -1,12 +1,14 @@
 //go:build windows
 
-package tools
+package backend
 
 import (
 	"fmt"
 	"log"
 	"syscall"
 	"unsafe"
+
+	"github.com/lxn/win"
 )
 
 var (
@@ -26,14 +28,14 @@ var (
 )
 
 // 设置为桌面子窗口 - 抵抗显示桌面，融入桌面环境
-func SetupDesktopChildWidget(windowTitle string) error {
+func SetupDesktopChildWidget() error {
 	// 1. 查找我们的窗口
 	hwnd, _, _ := procFindWindowW.Call(
 		0,
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(windowTitle))),
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(window_title))),
 	)
 	if hwnd == 0 {
-		return fmt.Errorf("找不到窗口: %s", windowTitle)
+		return fmt.Errorf("找不到窗口: %s", window_title)
 	}
 
 	// 2. 创建桌面 WorkerW 窗口（关键技术）
@@ -108,7 +110,7 @@ func SetupDesktopChildWidget(windowTitle string) error {
 	}
 
 	// 7. 设置透明度
-	procSetLayeredWindowAttributes.Call(hwnd, 0, 230, 0x02) // 稍微透明
+	// procSetLayeredWindowAttributes.Call(hwnd, 0, 230, 0x02) // 稍微透明
 
 	// 8. 最终位置设置 - 不需要设置 TOPMOST，父子关系会处理层级
 	const (
@@ -128,4 +130,9 @@ func SetupDesktopChildWidget(windowTitle string) error {
 	)
 
 	return nil
+}
+
+func SetTransparentBackground() {
+	hwnd := win.FindWindow(nil, syscall.StringToUTF16Ptr(window_title))
+	win.SetWindowLong(hwnd, win.GWL_EXSTYLE, win.GetWindowLong(hwnd, win.GWL_EXSTYLE)|win.WS_EX_LAYERED)
 }
