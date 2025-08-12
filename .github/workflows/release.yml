@@ -1,10 +1,6 @@
 name: Wails Build
 
 on:
-    push:
-        tags:
-            # Match any new tag
-            - '*'
     release:
         types: [created]
 
@@ -19,18 +15,19 @@ jobs:
             fail-fast: false
             matrix:
                 build:
-                    - name: 'ZEEHO-Widget'
-                      platform: 'linux/amd64'
-                      os: 'ubuntu-latest'
-                      artifact_name: 'zeeho-widget-linux-amd64.tar.gz'
-                    - name: 'ZEEHO-Widget'
+                    - name: 'ZEEHO-Widget.exe'
                       platform: 'windows/amd64'
                       os: 'windows-latest'
-                      artifact_name: 'zeeho-widget-windows-amd64.zip'
-                    - name: 'ZEEHO-Widget'
-                      platform: 'darwin/universal'
-                      os: 'macos-latest'
-                      artifact_name: 'zeeho-widget-darwin-universal.tar.gz'
+                      artifact_name: 'ZEEHO-Widget.exe'
+                    # - name: 'ZEEHO-Widget'
+                    #   platform: 'linux/amd64'
+                    #   os: 'ubuntu-latest'
+                    #   artifact_name: 'ZEEHO-Widget'
+
+                    # - name: 'ZEEHO-Widget'
+                    #   platform: 'darwin/universal'
+                    #   os: 'macos-latest'
+                    #   artifact_name: 'ZEEHO-Widget'
 
         runs-on: ${{ matrix.build.os }}
 
@@ -42,104 +39,12 @@ jobs:
                   fetch-depth: 0
 
             - name: Build wails
-              uses: dAppServer/wails-build-action@main
+              uses: dAppServer/wails-build-action@v2.2
               id: build
               with:
                   build-name: ${{ matrix.build.name }}
                   build-platform: ${{ matrix.build.platform }}
-                  package: false
+                  package: true
                   go-version: '1.23'
                   wails-version: 'v2.9.0'
                   node-version: '18'
-
-            - name: Package Release Files (Windows)
-              if: matrix.build.os == 'windows-latest'
-              run: |
-                  $buildDir = "build\bin"
-                  if (Test-Path $buildDir) {
-                    Get-ChildItem -Path $buildDir
-                    Compress-Archive -Path "$buildDir\*" -DestinationPath ${{ matrix.build.artifact_name }} -Force
-                  } else {
-                    Write-Error "Build directory not found: $buildDir"
-                    exit 1
-                  }
-              shell: pwsh
-
-            - name: Package Release Files (Unix)
-              if: matrix.build.os != 'windows-latest'
-              run: |
-                  cd build/bin
-                  tar -czf ../../${{ matrix.build.artifact_name }} ./*
-
-            - name: Upload Build Artifacts
-              uses: actions/upload-artifact@v4
-              with:
-                  name: ${{ matrix.build.name }}-${{ matrix.build.os }}
-                  path: ${{ matrix.build.artifact_name }}
-                  retention-days: 30
-
-            - name: Upload Release Asset (if release)
-              if: github.event_name == 'release'
-              uses: actions/upload-release-asset@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./${{ matrix.build.artifact_name }}
-                  asset_name: ${{ matrix.build.artifact_name }}
-                  asset_content_type: application/octet-stream
-
-    create-release:
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        needs: build
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Download all artifacts
-              uses: actions/download-artifact@v4
-              with:
-                  path: ./artifacts
-
-            - name: Create Release
-              id: create_release
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  tag_name: ${{ github.ref_name }}
-                  release_name: Release ${{ github.ref_name }}
-                  draft: false
-                  prerelease: false
-                  body: |
-                      ## ZEEHO Widget ${{ github.ref_name }}
-
-                      ### Downloads
-                      - **Windows**: zeeho-widget-windows-amd64.zip
-                      - **macOS**: zeeho-widget-darwin-universal.tar.gz  
-                      - **Linux**: zeeho-widget-linux-amd64.tar.gz
-
-                      ### Installation
-                      1. Download the appropriate file for your platform
-                      2. Extract the archive
-                      3. Run the executable
-                      4. Follow the setup instructions in the [README](https://github.com/${{ github.repository }})
-
-                      ### Changes
-                      See the commit history for detailed changes in this release.
-
-            - name: Upload Release Assets
-              run: |
-                  for file in ./artifacts/*/zeeho-widget-*; do
-                    if [ -f "$file" ]; then
-                      filename=$(basename "$file")
-                      echo "Uploading $filename"
-                      curl -X POST \
-                        -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                        -H "Content-Type: application/octet-stream" \
-                        --data-binary @"$file" \
-                        "${{ steps.create_release.outputs.upload_url }}?name=$filename"
-                    fi
-                  done
