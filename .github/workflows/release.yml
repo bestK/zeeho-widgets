@@ -1,102 +1,145 @@
-name: Release Build
+name: Wails Build
 
 on:
+    push:
+        tags:
+            # Match any new tag
+            - '*'
     release:
         types: [created]
+
+env:
+    # Necessary for most environments as build failure can occur due to OOM issues
+    NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
     build:
         strategy:
+            # Failure in one platform build won't impact the others
+            fail-fast: false
             matrix:
-                os: [windows-latest, macos-latest, ubuntu-latest]
-                include:
-                    - os: windows-latest
-                      build_name: windows
-                      artifact_name: windows-amd64.zip
-                    - os: macos-latest
-                      build_name: darwin
-                      artifact_name: darwin-amd64.zip
-                    - os: ubuntu-latest
-                      build_name: linux
-                      artifact_name: linux-amd64.zip
+                build:
+                    - name: 'ZEEHO-Widget'
+                      platform: 'linux/amd64'
+                      os: 'ubuntu-latest'
+                      artifact_name: 'zeeho-widget-linux-amd64.tar.gz'
+                    - name: 'ZEEHO-Widget'
+                      platform: 'windows/amd64'
+                      os: 'windows-latest'
+                      artifact_name: 'zeeho-widget-windows-amd64.zip'
+                    - name: 'ZEEHO-Widget'
+                      platform: 'darwin/universal'
+                      os: 'macos-latest'
+                      artifact_name: 'zeeho-widget-darwin-universal.tar.gz'
 
-        runs-on: ${{ matrix.os }}
+        runs-on: ${{ matrix.build.os }}
 
         steps:
-            - uses: actions/checkout@v3
+            - name: Checkout
+              uses: actions/checkout@v4
               with:
+                  submodules: recursive
                   fetch-depth: 0
 
-            - name: Set up Go
-              uses: actions/setup-go@v4
+            - name: Build wails
+              uses: dAppServer/wails-build-action@main
+              id: build
               with:
-                  go-version: '>=1.20.0'
-
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
-              with:
+                  build-name: ${{ matrix.build.name }}
+                  build-platform: ${{ matrix.build.platform }}
+                  package: false
+                  go-version: '1.23'
+                  wails-version: 'v2.9.0'
                   node-version: '18'
 
-            - name: Install Wails
-              run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-            - name: Install Frontend Dependencies
-              run: |
-                  cd frontend
-                  npm install
-
-            - name: Update Wails Version in go.mod
-              run: |
-                  go get github.com/wailsapp/wails/v2@v2.10.2
-                  go mod tidy
-
-            - name: Debug Info
-              run: |
-                  wails version
-                  go version
-                  pwd
-                  ls -la
-
-            - name: Build Application
-              run: |
-                  wails build
-              env:
-                  CGO_ENABLED: 1
-
-            - name: Debug Build Directory (Windows)
-              if: matrix.os == 'windows-latest'
-              run: |
-                  Get-ChildItem -Path . -Recurse | Where-Object { $_.PSIsContainer } | Select-Object FullName
-                  if (Test-Path "build") {
-                      Get-ChildItem -Path "build" -Recurse
-                  }
-              shell: pwsh
-
-            - name: Zip Release Files (Windows)
-              if: matrix.os == 'windows-latest'
+            - name: Package Release Files (Windows)
+              if: matrix.build.os == 'windows-latest'
               run: |
                   $buildDir = "build\bin"
                   if (Test-Path $buildDir) {
-                      Get-ChildItem -Path $buildDir
-                      Compress-Archive -Path "$buildDir\*" -DestinationPath ${{ matrix.artifact_name }} -Force
+                    Get-ChildItem -Path $buildDir
+                    Compress-Archive -Path "$buildDir\*" -DestinationPath ${{ matrix.build.artifact_name }} -Force
                   } else {
-                      Write-Error "Build directory not found: $buildDir"
-                      exit 1
+                    Write-Error "Build directory not found: $buildDir"
+                    exit 1
                   }
               shell: pwsh
 
-            - name: Zip Release Files (Unix)
-              if: matrix.os != 'windows-latest'
+            - name: Package Release Files (Unix)
+              if: matrix.build.os != 'windows-latest'
               run: |
                   cd build/bin
-                  zip -r ../../${{ matrix.artifact_name }} ./*
+                  tar -czf ../../${{ matrix.build.artifact_name }} ./*
 
-            - name: Upload Release Asset
+            - name: Upload Build Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.build.name }}-${{ matrix.build.platform }}
+                  path: ${{ matrix.build.artifact_name }}
+                  retention-days: 30
+
+            - name: Upload Release Asset (if release)
+              if: github.event_name == 'release'
               uses: actions/upload-release-asset@v1
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./${{ matrix.artifact_name }}
-                  asset_name: ${{ matrix.artifact_name }}
-                  asset_content_type: application/zip
+                  asset_path: ./${{ matrix.build.artifact_name }}
+                  asset_name: ${{ matrix.build.artifact_name }}
+                  asset_content_type: application/octet-stream
+
+    create-release:
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        needs: build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: ./artifacts
+
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  release_name: Release ${{ github.ref_name }}
+                  draft: false
+                  prerelease: false
+                  body: |
+                      ## ZEEHO Widget ${{ github.ref_name }}
+
+                      ### Downloads
+                      - **Windows**: zeeho-widget-windows-amd64.zip
+                      - **macOS**: zeeho-widget-darwin-universal.tar.gz  
+                      - **Linux**: zeeho-widget-linux-amd64.tar.gz
+
+                      ### Installation
+                      1. Download the appropriate file for your platform
+                      2. Extract the archive
+                      3. Run the executable
+                      4. Follow the setup instructions in the [README](https://github.com/${{ github.repository }})
+
+                      ### Changes
+                      See the commit history for detailed changes in this release.
+
+            - name: Upload Release Assets
+              run: |
+                  for file in ./artifacts/*/zeeho-widget-*; do
+                    if [ -f "$file" ]; then
+                      filename=$(basename "$file")
+                      echo "Uploading $filename"
+                      curl -X POST \
+                        -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                        -H "Content-Type: application/octet-stream" \
+                        --data-binary @"$file" \
+                        "${{ steps.create_release.outputs.upload_url }}?name=$filename"
+                    fi
+                  done
