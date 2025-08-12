@@ -1,6 +1,10 @@
 name: Wails Build
 
 on:
+    push:
+        tags:
+            # Match any new tag
+            - '*'
     release:
         types: [created]
 
@@ -70,7 +74,7 @@ jobs:
             - name: Upload Build Artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: ${{ matrix.build.name }}-${{ matrix.build.platform }}
+                  name: ${{ matrix.build.name }}-${{ matrix.build.os }}
                   path: ${{ matrix.build.artifact_name }}
                   retention-days: 30
 
